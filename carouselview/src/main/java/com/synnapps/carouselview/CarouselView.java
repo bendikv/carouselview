@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.Handler;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.util.AttributeSet;
@@ -16,9 +17,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RemoteViews.RemoteView;
-
-import java.util.Timer;
-import java.util.TimerTask;
 
 /**
  * Created by Sayyam on 11/25/15.
@@ -46,8 +44,7 @@ public class CarouselView extends FrameLayout {
     private ViewListener mViewListener = null;
     private ImageListener mImageListener = null;
 
-    private Timer swipeTimer;
-    private SwipeTask swipeTask;
+    private Handler handler = new Handler();
 
     private boolean autoPlay;
     private boolean disableAutoPlayOnUserInteraction;
@@ -236,22 +233,14 @@ public class CarouselView extends FrameLayout {
 
     private void stopScrollTimer() {
 
-        if (null != swipeTimer) {
-            swipeTimer.cancel();
-        }
+        handler.removeCallbacks(runnable);
 
-        if (null != swipeTask) {
-            swipeTask.cancel();
-        }
     }
 
 
     private void resetScrollTimer() {
 
         stopScrollTimer();
-
-        swipeTask = new SwipeTask();
-        swipeTimer = new Timer();
 
     }
 
@@ -263,8 +252,7 @@ public class CarouselView extends FrameLayout {
         resetScrollTimer();
 
         if (autoPlay && slideInterval > 0 && containerViewPager.getAdapter() != null && containerViewPager.getAdapter().getCount() > 1) {
-
-            swipeTimer.schedule(swipeTask, slideInterval, slideInterval);
+            handler.postDelayed(runnable, slideInterval);
         }
     }
 
@@ -380,18 +368,19 @@ public class CarouselView extends FrameLayout {
         }
     };
 
-    private class SwipeTask extends TimerTask {
+    private Runnable runnable = new Runnable() {
+        @Override
         public void run() {
             containerViewPager.post(new Runnable() {
                 public void run() {
-
                     int nextPage = (containerViewPager.getCurrentItem() + 1) % getPageCount();
-
                     containerViewPager.setCurrentItem(nextPage, 0 != nextPage || animateOnBoundary);
                 }
             });
+
+            playCarousel();
         }
-    }
+    };
 
     public void setImageListener(ImageListener mImageListener) {
         this.mImageListener = mImageListener;
